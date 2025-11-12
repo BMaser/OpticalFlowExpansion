@@ -26,6 +26,12 @@ If you find this work useful, please consider citing our paper:
 - [gdown](https://github.com/wkentaro/gdown) for downloading from google drive
 - [cvkit](https://github.com/roboception/cvkit) for visualizing .pfm files
 
+## Visualization Tools
+We provide Python tools for organizing and visualizing outputs:
+- **visualize_output.py**: Organize mixed outputs into categorized subdirectories (flow, expansion, motion-in-depth, occlusion, flow_viz, warped)
+- **create_videos.py**: Generate videos from organized image sequences at specified frame rate
+
+See [visualization_tool/README.md](visualization_tool/README.md) for detailed usage instructions.
 
 ## Precomputed results
 We provide precomputed optical flow, optical expansion, and monocular depth (from [monodepth2](https://github.com/nianticlabs/monodepth2)) for kitti sceneflow training set (equiv. to ours train+val). 

@@ -85,7 +85,7 @@ model = nn.DataParallel(model, device_ids=[0])
 model.cuda()
 
 if args.loadmodel is not None:
-    pretrained_dict = torch.load(args.loadmodel)
+    pretrained_dict = torch.load(args.loadmodel, weights_only=False)
     mean_L=pretrained_dict['mean_L']
     mean_R=pretrained_dict['mean_R']
     pretrained_dict['state_dict'] =  {k:v for k,v in pretrained_dict['state_dict'].items()}
@@ -164,18 +164,25 @@ def main():
 
         # save predictions
         idxname = test_left_img[inx].split('/')[-1]
-        with open('%s/%s/flo-%s.pfm'% (args.outdir, args.dataset,idxname.split('.')[0]),'w') as f:
-            save_pfm(f,flow[::-1].astype(np.float32))
+        idxname_noext = idxname.split('.')[0]  # Remove file extension
+        # Save flow as 16-bit PNG (preserving more precision)
+        flow_16bit = np.clip((flow + 512) * 64, 0, 65535).astype(np.uint16)
+        cv2.imwrite('%s/%s/flo-%s.png'% (args.outdir, args.dataset,idxname_noext), flow_16bit)
         flowvis = point_vec(imgL_o, flow)
-        cv2.imwrite('%s/%s/visflo-%s.jpg'% (args.outdir, args.dataset,idxname),flowvis)
+        cv2.imwrite('%s/%s/visflo-%s.jpg'% (args.outdir, args.dataset,idxname_noext),flowvis)
         imwarped = warp_flow(imgR_o, flow[:,:,:2])
-        cv2.imwrite('%s/%s/warp-%s.jpg'% (args.outdir, args.dataset,idxname),imwarped[:,:,::-1])
-        with open('%s/%s/occ-%s.pfm'% (args.outdir, args.dataset,idxname.split('.')[0]),'w') as f:
-            save_pfm(f,occ[::-1].astype(np.float32))
-        with open('%s/%s/exp-%s.pfm'% (args.outdir, args.dataset,idxname.split('.')[0]),'w') as f:
-            save_pfm(f,logexp[::-1].astype(np.float32))
-        with open('%s/%s/mid-%s.pfm'% (args.outdir, args.dataset,idxname.split('.')[0]),'w') as f:
-            save_pfm(f,logmid[::-1].astype(np.float32))
+        cv2.imwrite('%s/%s/warp-%s.jpg'% (args.outdir, args.dataset,idxname_noext),imwarped[:,:,::-1])
+        # Save occlusion as 8-bit PNG
+        occ_8bit = np.clip(occ * 255, 0, 255).astype(np.uint8)
+        cv2.imwrite('%s/%s/occ-%s.png'% (args.outdir, args.dataset,idxname_noext), occ_8bit)
+        # Save expansion as 16-bit PNG (normalized)
+        exp_norm = (logexp - logexp.min()) / (logexp.max() - logexp.min() + 1e-8)
+        exp_16bit = (exp_norm * 65535).astype(np.uint16)
+        cv2.imwrite('%s/%s/exp-%s.png'% (args.outdir, args.dataset,idxname_noext), exp_16bit)
+        # Save motion-in-depth as 16-bit PNG (normalized)
+        mid_norm = (logmid - logmid.min()) / (logmid.max() - logmid.min() + 1e-8)
+        mid_16bit = (mid_norm * 65535).astype(np.uint16)
+        cv2.imwrite('%s/%s/mid-%s.png'% (args.outdir, args.dataset,idxname_noext), mid_16bit)
         torch.cuda.empty_cache()
     print(np.mean(ttime_all))
                 

@@ -1,0 +1,297 @@
+# Project Rules for OpticalFlowExpansion
+# Author: Bob Maser
+# Date: November 11, 2024
+
+## CRITICAL RULES - ALWAYS FOLLOW
+
+### Rule 1: File Organization & OOP Architecture
+**REQUIREMENT:** Be organized, follow OOP architecture and structure files properly.
+
+**DO:**
+- Organize all files in appropriate project directories
+- Follow Object-Oriented Programming principles
+- Create proper class structures when writing Python code
+- Use meaningful directory hierarchies
+- Keep related files together in logical modules
+- Use proper naming conventions (PascalCase for classes, snake_case for functions/files)
+
+**DON'T:**
+- Drop files anywhere randomly
+- Create scripts in root without organization
+- Mix concerns (separate data processing, visualization, utilities)
+- Use procedural code when OOP would be cleaner
+
+**Project Structure:**
+```
+OpticalFlowExpansion/
+├── models/              # Neural network models
+├── dataloader/          # Data loading modules
+├── utils/               # Utility functions and helpers
+├── visualization_tool/  # Visualization scripts (organized module)
+├── weights/             # Pretrained model weights
+├── docs/               # Documentation
+├── logs/               # Log files (NOT /tmp!)
+├── scripts/            # Workflow and automation scripts
+└── output/             # Output data (organized by experiment)
+```
+
+---
+
+### Rule 2: Never Use /tmp Directory
+**REQUIREMENT:** Never work with /tmp/ for any files. This is a shared server.
+
+**REASON:** 
+- Shared server environment
+- Other users may conflict with your files
+- Files in /tmp can be cleaned up unexpectedly
+- No proper permissions control
+
+**DO:**
+- Use project-specific directories: `logs/`, `output/`, `cache/`
+- Create dedicated directories within the project or user space
+- Use `/home/bobmaser/` or project subdirectories
+- Use `/mnt/hdd2/Bob/` for large output data
+
+**DON'T:**
+- Write log files to /tmp/
+- Store temporary data in /tmp/
+- Use /tmp for any intermediate processing
+
+**Example:**
+```bash
+# WRONG:
+log_file="/tmp/process.log"
+
+# CORRECT:
+log_file="/home/bobmaser/github/OpticalFlowExpansion/logs/process.log"
+```
+
+---
+
+### Rule 3: Dataset Frame Continuity
+**REQUIREMENT:** Always treat dataset splits as contiguous frames since processing videos, not individual images.
+
+**REASON:**
+- Working with video sequences, not independent images
+- Frame order matters for optical flow
+- Temporal relationships must be preserved
+
+**DO:**
+- Process frames in sequential order
+- Maintain frame numbering consistency
+- Create frame pairs (frame_i, frame_{i+1}) from continuous sequences
+
+**DON'T:**
+- Shuffle frames randomly
+- Treat as independent image classification task
+- Break temporal continuity
+
+---
+
+### Rule 4: Git Branch Naming
+**REQUIREMENT:** When naming git branches, exclude the cursor name and use only the user's name due to office restrictions.
+
+**Example:**
+```bash
+# WRONG:
+git checkout -b cursor-bobmaser-feature-X
+
+# CORRECT:
+git checkout -b bobmaser-feature-X
+```
+
+---
+
+### Rule 5: Conda Environment
+**REQUIREMENT:** Use the `opt-flow` conda environment for all Python scripts.
+
+**Usage:**
+```bash
+# Activate environment
+conda activate opt-flow
+
+# Run scripts
+python script.py
+
+# Or use conda run
+conda run -n opt-flow python script.py
+```
+
+---
+
+### Rule 6: Model Selection Guidelines
+**REQUIREMENT:** Choose appropriate pretrained models based on dataset type.
+
+**Available Models:**
+
+| Model | Training Data | Best For | Use Case |
+|-------|--------------|----------|----------|
+| `exp-driving` | Driving | Basic driving scenes | Road videos |
+| `exp-kitti-train` | Driving→KITTI | Automotive/road | Ground-level cars |
+| `exp-kitti-trainval` | Driving→KITTI trainval | High-quality automotive | KITTI-like scenes |
+| `robust` | Mixed (TMDKSGV) | **Diverse/aerial/non-automotive** | **UAV, varied scenes** |
+
+**Decision Tree:**
+```
+Is your scene automotive/driving? 
+├─ Yes → Use exp-kitti-trainval
+└─ No  → Is it aerial/drone/varied?
+         └─ Yes → Use ROBUST ✓
+```
+
+---
+
+### Rule 7: Output File Formats
+**REQUIREMENT:** Use appropriate file formats for different output types.
+
+**Formats:**
+- **Flow data (flo-\*.png)**: 16-bit PNG (preserves precision)
+- **Expansion (exp-\*.png)**: 16-bit PNG (normalized)
+- **Motion-in-depth (mid-\*.png)**: 16-bit PNG (normalized)
+- **Occlusion (occ-\*.png)**: 8-bit PNG (binary/probability)
+- **Flow visualization (visflo-\*.jpg)**: JPEG (human-readable)
+- **Warped frames (warp-\*.jpg)**: JPEG (visualization)
+
+**DON'T:**
+- Use .pfm format (harder to work with)
+- Save visualizations as PNG (larger, unnecessary)
+- Mix format conventions
+
+---
+
+### Rule 8: Code Quality Standards
+**REQUIREMENT:** Write clean, maintainable, documented code.
+
+**DO:**
+- Add docstrings to all functions and classes
+- Use type hints where appropriate
+- Follow PEP 8 style guide
+- Add comments for complex logic
+- Handle errors gracefully with try/except
+- Use meaningful variable names
+
+**Example:**
+```python
+def process_optical_flow(frame1: np.ndarray, frame2: np.ndarray, 
+                         model_path: str) -> Dict[str, np.ndarray]:
+    """
+    Process optical flow between two consecutive frames.
+    
+    Args:
+        frame1: First frame as numpy array (H, W, 3)
+        frame2: Second frame as numpy array (H, W, 3)
+        model_path: Path to pretrained model weights
+        
+    Returns:
+        Dictionary containing flow, expansion, occlusion outputs
+        
+    Raises:
+        FileNotFoundError: If model_path doesn't exist
+        ValueError: If frames have mismatched dimensions
+    """
+    # Implementation here
+    pass
+```
+
+---
+
+### Rule 9: Data Path Conventions
+**REQUIREMENT:** Use consistent path conventions for data storage.
+
+**Structure:**
+```
+Input Data:  /mnt/hdd2/ura1/database/RGB Frames/[dataset]/[sequence]/
+Output Data: /mnt/hdd2/Bob/[experiment_name]/[sequence]/
+             ├── seq/         # Raw outputs
+             ├── organized/   # Categorized outputs
+             └── videos/      # Generated videos
+
+Project:     /home/bobmaser/github/OpticalFlowExpansion/
+             ├── logs/        # Log files
+             ├── scripts/     # Automation scripts
+             └── weights/     # Model weights
+```
+
+---
+
+### Rule 10: Documentation Requirements
+**REQUIREMENT:** Document all scripts, workflows, and changes.
+
+**DO:**
+- Create README.md for each major module
+- Document workflow scripts with usage examples
+- Keep CHANGELOG.md updated
+- Add inline comments for complex algorithms
+- Create diagrams for visualization explanations
+
+**Example:**
+```markdown
+# Script Name
+
+## Purpose
+Brief description of what this script does.
+
+## Usage
+```bash
+python script.py --arg1 value1 --arg2 value2
+```
+
+## Arguments
+- `--arg1`: Description of argument 1
+- `--arg2`: Description of argument 2
+
+## Output
+Describe what outputs are generated and where.
+
+## Example
+Full working example.
+```
+
+---
+
+### Rule 11: Resource Management
+**REQUIREMENT:** Be mindful of computational resources on shared server.
+
+**DO:**
+- Use `CUDA_VISIBLE_DEVICES` to specify GPU
+- Check GPU availability before running
+- Clean up large intermediate files
+- Use background processes for long-running tasks
+- Monitor disk space usage
+
+**Example:**
+```bash
+# Check GPU availability
+nvidia-smi
+
+# Use specific GPU
+CUDA_VISIBLE_DEVICES=0 python script.py
+
+# Check disk space
+df -h /mnt/hdd2/Bob/
+```
+
+---
+
+## Summary Checklist
+
+Before creating/running any script:
+
+- [ ] Files organized in proper project directories (Rule 1)
+- [ ] No use of /tmp directory (Rule 2)
+- [ ] Code follows OOP principles where appropriate (Rule 1)
+- [ ] Using opt-flow conda environment (Rule 5)
+- [ ] Appropriate model selected for dataset type (Rule 6)
+- [ ] Proper file formats for outputs (Rule 7)
+- [ ] Code is documented and clean (Rule 8)
+- [ ] Paths follow project conventions (Rule 9)
+- [ ] Documentation updated (Rule 10)
+- [ ] Resource usage considered (Rule 11)
+
+---
+
+## Contact
+For questions about these rules, contact: Bob Maser
+
+Last Updated: November 11, 2024
+
